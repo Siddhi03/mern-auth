@@ -1,12 +1,14 @@
 import React from "react";
 import {Link, useNavigate} from 'react-router-dom'
 import { useState } from "react";
+import { signInFailure,signInSuccess, signInStart } from "../redux/user/userSlice";
+import {useDispatch, useSelector} from 'react-redux';
 
 export default function Signin(){
     const [formData,setFormData] = useState({});
-    const [error,setError] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const {loading, error} = useSelector((state) => state.user)
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const handleChange=(e)=>{
         setFormData({...formData, [e.target.id]:e.target.value})
@@ -15,8 +17,7 @@ export default function Signin(){
     const handleSubmit=async(e) =>{
         e.preventDefault();
         try{
-            setLoading(true);
-            setError(false)
+            dispatch(signInStart());
             const res = await fetch("/api/auth/signin", {
                 method: 'POST',
                 headers:{
@@ -25,17 +26,15 @@ export default function Signin(){
                 body: JSON.stringify(formData),
             });
             const data = await res.json();
-            setLoading(false);
             if(data.success === false){
-                setError(true);
+                dispatch(signInFailure(data));
                 return;
             }
-
+            dispatch(signInSuccess(data));
             navigate('/')
             
-        } catch{
-            setLoading(false);
-            setError(true);
+        } catch(error){
+            dispatch(signInFailure(error));
         }
         
 
@@ -58,8 +57,8 @@ export default function Signin(){
                 </Link>      
             </div>
             <div className="px-2">
-                <p className="text-red-700 mt-5">{error && "Something went wrong"}</p>
-            </div>
+                <p className="text-red-700 mt-5"> {error && error.message ? error.message || "Something went wrong": ''} </p>
+            </div> 
         </div>
     )
 }
